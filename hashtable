@@ -1,0 +1,494 @@
+public class HashTableDriver{
+    public static void main(String[] args) {
+        System.out.println("Linear Test");
+        LinearProbeHashTable a = new LinearProbeHashTable(12);
+        
+        System.out.println("Quadratic Test");
+        QuadraticProbeHashTable b = new QuadraticProbeHashTable(12);
+        
+       System.out.println("Separate Chain Test");
+        SeparateChainHashTable c = new SeparateChainHashTable(12);
+    }
+}
+public interface HashTableInterface{
+        public int      getCapacity();
+        public int      getLoad();
+        public double   getLoadFactor();
+
+        public int      insert(int k, String v);
+        public String[] findAll(int k);
+        public String   findFirst(int k);
+        public int      removeAll(int k);
+        public Boolean  resize(int newSize);
+        public void     compress();
+
+        public String   toString();
+}
+public class LinearProbeHashTable implements HashTableInterface{
+
+        hashBox[] hashTable;
+
+        public LinearProbeHashTable(int n){
+                hashTable = new hashBox[n];
+        }
+
+        public int getCapacity(){
+                return hashTable.length;
+        }
+
+        public int getLoad(){
+                int count = 0;
+                for (int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i] != null && hashTable[i].valid){
+                                count++;
+                        }
+                }
+                return count;
+        }
+
+        public double getLoadFactor(){
+                return (this.getLoad())/(this.getCapacity());
+        }
+
+        public int insert(int k, String v){
+                int target = k%hashTable.length;
+                int collisions = 0;
+                if (hashTable[target] != null){
+                    while(hashTable[target] != null && hashTable[target].valid){
+                           target = (target+1)%hashTable.length;
+                           collisions++;
+                    }
+                }
+                hashTable[target] = new hashBox(k,v);
+                return collisions;
+        }
+        public String[] findAll(int k){
+                int count = 0;
+                for(int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i].checkKey() == k)
+                                count++;
+                }
+                if (count == 0) return null;
+                String[] foundK = new String[count];
+                for (int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i].checkKey() == k)
+                                foundK[i] = hashTable[i].checkValue();
+                }
+                return foundK;
+        }
+
+        public String findFirst(int k){
+                for (int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i].checkKey() == k){
+                                return hashTable[i].checkValue();
+                        }else{
+                                i++;
+                        }
+                }
+                return null;
+        }
+
+        public int removeAll(int k){
+                int count = 0;
+                int target = k%hashTable.length;
+                for (int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i].checkKey() == k){
+                                hashTable[i].nullify();
+                                count++;
+                        }
+                }
+                return count;
+        }
+
+        public Boolean resize(int newSize){
+                if (newSize < this.getLoad()) return false;
+                hashBox[] newTable = new hashBox[newSize];
+                for (int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i] != null && hashTable[i].valid){
+                                int k = hashTable[i].key;
+                                String v = hashTable[i].value;
+                                int target = k%newTable.length;
+                                while (newTable[target] != null && newTable[target].valid){
+                                        target = (target+1)%newTable.length;
+                                }
+                                newTable[target] = new hashBox(k, v);
+                        }
+                }
+                hashTable = newTable;
+                return true;
+        }
+
+        public void compress(){
+                this.resize(this.getLoad());
+        }
+
+
+        public String toString(){
+                String result = "";
+                for (int i = 0; i< hashTable.length; i++){
+                        result += "Index:" + i + " " + "Value(s):";
+                        if (hashTable[i] != null && hashTable[i].valid){
+                                result += (" (" + hashTable[i].checkKey() + ", " + hashTable[i].checkValue() + ")\n");
+                        }else{
+                                result += "\n";
+                        }
+                }
+                result += "The Current Load is: " + this.getLoad() + "\n";
+                result += "The Current Capacity is: " + this.getCapacity() + "\n";
+                result += "The Current Load Factor is: " + this.getLoadFactor();
+                return result;
+        }
+}
+
+public class QuadraticProbeHashTable implements HashTableInterface{
+
+        hashBox[] hashTable;
+
+        public QuadraticProbeHashTable(int n){
+                hashTable = new hashBox[n];
+        }
+
+        public int getCapacity(){
+                return hashTable.length;
+        }
+
+        public int getLoad(){
+                int count = 0;
+                for (int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i] != null && hashTable[i].valid){
+                                count++;
+                        }
+                }
+                return count;
+        }
+
+        public double getLoadFactor(){
+                double load = this.getLoad();
+                double cap = this.getCapacity();
+                return (load/cap);
+        }
+
+        public int insert(int k, String v){
+                int target = k%hashTable.length;
+                int collisions = 0;
+                if (hashTable[target] != null){
+                        while(hashTable[target] != null && hashTable[target].valid){
+                                target = (target+(collisions^2))%hashTable.length;
+                                collisions++;
+                        }
+                }
+                hashTable[target] = new hashBox(k,v);
+                return collisions;
+        }
+        
+        public String[] findAll(int k){
+                int count = 0;
+                for(int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i].key == k)
+                                count++;
+                }
+                if (count == 0) return null;
+                String[] foundK = new String[count];
+                int kIndex = 0;
+                for (int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i] != null && hashTable[i].key == k && kIndex < foundK.length)
+                                foundK[kIndex] = hashTable[i].value;
+                                kIndex++;
+                }
+                return foundK;
+        }
+
+        public String findFirst(int k){
+                for (int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i] != null && hashTable[i].key == k){
+                                return hashTable[i].value;
+                        }else{
+                                i++;
+                        }
+                }
+                return null;
+        }
+
+        public int removeAll(int k){
+                int count = 0;
+                int target = k%hashTable.length;
+                for (int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i] != null && hashTable[i].key == k){
+                                hashTable[i].nullify();
+                                count++;
+                        }
+                }
+                return count;
+        }
+
+        public Boolean resize(int newSize){
+                if (newSize < this.getLoad()) return false;
+                hashBox[] newTable = new hashBox[newSize];
+                for (int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i] != null && hashTable[i].valid){
+                                int k = hashTable[i].key;
+                                String v = hashTable[i].value;
+                                int target = k%newTable.length;
+                                int collisions = 0;
+                                while (newTable[target] != null && newTable[target].valid){
+                                        target = (target+(collisions^2))%newTable.length;
+                                        collisions++;
+                                }
+                                newTable[target] = new hashBox(k, v);
+                        }
+                }
+                hashTable = newTable;
+                return true;
+        }
+
+        public void compress(){
+                this.resize(this.getLoad());
+        }
+
+        public String toString(){
+                String result = "";
+                for (int i = 0; i< hashTable.length; i++){
+                        result += "Index:" + i + " " + "Value(s):";
+                        if (hashTable[i] != null && hashTable[i].valid){
+                                result += (" (" + hashTable[i].key + ", " + hashTable[i].value + ")\n");
+                        }else{
+                                result += "\n";
+                        }
+                }
+                result += "The Current Load is: " + this.getLoad() + "\n";
+                result += "The Current Capacity is: " + this.getCapacity() + "\n";
+                result += "The Current Load Factor is: " + this.getLoadFactor();
+                return result;
+        }
+}
+public class SeparateChainHashTable implements HashTableInterface{
+
+        hashNodeList[] hashTable;
+
+        public SeparateChainHashTable(int n){
+                hashTable = new hashNodeList[n];
+        }
+//8
+        public int getCapacity(){
+                return hashTable.length;
+        }
+//12
+        public int getLoad(){
+                int load = 0;
+                for (int i = 0; i < hashTable.length; i++){
+                        if (hashTable[i] != null) load += hashTable[i].chainLength();
+                }
+                return load;
+        }
+//20
+        public double getLoadFactor(){
+                double load = this.getLoad();
+                double cap = this.getCapacity();
+                return (load/cap);
+        }
+//26
+        public int insert(int k, String v){
+                int target = k%hashTable.length;
+                int collisions = 0;
+                if (hashTable[target] != null){
+                        collisions = hashTable[target].chainLength();
+                }
+                hashNodeList newChain = new hashNodeList();
+                hashTable[target] = newChain;
+                hashTable[target].insert(k,v);
+                return collisions;
+
+        }
+//39
+        public String[] findAll(int k){
+                int target = k%hashTable.length;
+                if (hashTable[target] != null) return hashTable[target].findAll(k);
+                return null;
+        }
+//45
+        public String findFirst(int k){
+                int target = k%hashTable.length;
+                if (hashTable[target] != null) return hashTable[target].findFirst(k);
+                return null;
+        }
+//51
+        public int removeAll(int k){
+                int target = k%hashTable.length;
+                if (hashTable[target] != null) return hashTable[target].removeAll(k);
+                return -1;
+        }
+//57
+        public Boolean resize(int newSize){
+                hashNodeList[] newList = new hashNodeList[newSize];
+                //hash each element into newList
+                for (int i = 0; i < hashTable.length; i++){
+                        while (hashTable[i].seeNode().next !=null){
+                                hashNode box = hashTable[i].takeNode();
+                                int k = box.checkKey();
+                                String v = box.checkValue();
+                                int target = k%newSize;
+                                newList[target].insert(k,v);
+                        }
+                }
+                return true;
+
+        }
+//73
+        public void compress(){
+                int totalKeys = 0;
+        }
+//77
+        public String toString(){
+
+                String result = "";
+                for (int i = 0; i < hashTable.length; i++){
+                        result += "Index:" + i + " Value(s):";
+                        if (hashTable[i] != null) result += " " + hashTable[i].toString() + "\n";
+                        else result += "\n";
+                }
+                result += "The current load is: " + this.getLoad() + "\n";
+                result += "The current capacity is: " + this.getCapacity() + "\n";
+                result += "The current load factor is: " + this.getLoadFactor();
+
+                return result;
+
+        }
+
+}
+public class hashBox{
+
+        int key;
+        String value;
+        Boolean valid = false;
+
+        public hashBox(int i, String v){
+                key = i;
+                value = v;
+                valid = true;
+        }
+
+        public int checkKey(){
+                return key;
+        }
+
+        public String checkValue(){
+                return value;
+        }
+
+        public Boolean checkValid(){
+                return valid;
+        }
+
+        public void nullify(){
+                valid = false;
+        }
+}
+
+
+public class hashNode{
+        int key;
+        String value;
+        hashNode next;
+
+        hashNode(int k, String v){
+                key = k;
+                value = v;
+                next = null;
+        }
+
+        public int checkKey(){
+                return key;
+        }
+
+        public String checkValue(){
+                return value;
+        }
+}
+public class hashNodeList {
+
+        private final hashNode header;
+        public hashNodeList(){
+                header = new hashNode(0, "");
+        }
+//7
+        public void insert(int k, String v){
+                hashNode newNode = new hashNode(k,v);
+                hashNode current = header;
+                while (current.next != null){
+                        current = current.next;
+                }
+                current.next = newNode;
+        }
+//16
+        public int chainLength(){
+                int count = 0;
+                hashNode current = header;
+                while (current.next != null){
+                        count++;
+                        current = current.next;
+                }
+                return count;
+        }
+//26
+        public String[] findAll(int k){
+
+                if (this.chainLength() == 0) return null;
+                String[] foundK = new String[this.chainLength()];
+                hashNode current = header;
+                for (int i = 0; i < foundK.length; i++){
+                        if (current.checkKey() == k){
+                                foundK[i] = current.value;
+                        }
+                }
+                return foundK;
+        }
+//39
+        public String findFirst(int k){
+                if (this.chainLength() == 0) return null;
+                hashNode current = header;
+                while (current.next != null && current.key != k){
+                        current = current.next;
+                }
+                return current.checkValue();
+        }
+//48
+        public int removeAll(int k){
+                int count = 0;
+                hashNode current = header;
+                while (current.next != null && current.next.next != null){
+                        if (current.next.key == k){
+                                count++;
+                                current.next = current.next.next;
+                        }
+                        current = current.next;
+                }
+                return count;
+        }
+//61
+        public hashNode takeNode(){
+                if (header.next == null) return null;
+                hashNode current = header.next;
+                header.next = current.next;
+                return current;
+        }
+//68
+        public hashNode seeNode(){
+                if (header.next == null) return null;
+                hashNode current = header.next;
+                return current;
+        }
+//74
+        public String toString(){
+
+                String output = "";
+                hashNode current = header;
+                if (current.next != null){ do {
+                                output += "(" + current.next.key + ", " + current.next.value + ")";
+                                current = current.next;
+                        } while (current.next != null);
+                }
+                return output;
+        }
+
+}
+
